@@ -14,44 +14,71 @@ import { initSocket } from "./lib/socket.js";
 dotenv.config();
 
 const app = express();
-
-/* ✅ IMPORTANT: USE 5002 (MATCH FRONTEND) */
 const PORT = process.env.PORT || 5002;
 
-/* Fix __dirname for ES modules */
+/* Fix __dirname for ES Modules */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/* ✅ MIDDLEWARES */
+/* =========================
+   CORS
+========================= */
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      process.env.CLIENT_URL,
+    ],
     credentials: true,
   })
 );
 
+/* =========================
+   MIDDLEWARES
+========================= */
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
 
-/* ✅ ROUTES */
+/* =========================
+   HEALTH CHECK ROUTE
+========================= */
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "🚀 ChatNova Backend is Running",
+  });
+});
+
+/* =========================
+   API ROUTES
+========================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-/* ✅ PRODUCTION FRONTEND */
+/* =========================
+   PRODUCTION FRONTEND
+========================= */
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
   app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
   });
 }
 
-/* ✅ HTTP SERVER */
+/* =========================
+   HTTP SERVER
+========================= */
 const server = http.createServer(app);
 
-/* ✅ SOCKET INITIALIZATION */
+/* =========================
+   SOCKET.IO
+========================= */
 export const io = initSocket(server);
 
-/* ✅ START SERVER */
+/* =========================
+   START SERVER
+========================= */
 connectDB()
   .then(() => {
     server.listen(PORT, () => {
